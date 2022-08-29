@@ -13,7 +13,7 @@ class Piece:
 
     # self.__movement = piece_movement  # should be a list of 2 integers, which possibly vary according to input
 
-    #לברר מה ההבדל בלקרוא למתודה דרך self או דרך הקלאס
+    # לברר מה ההבדל בלקרוא למתודה דרך self או דרך הקלאס
 
     def get_location(self):
         return self.location
@@ -89,42 +89,42 @@ class Piece:
     def knight_jumps(self):
         possible_moves = []
         loc = self.get_location()
-        while loc[0] < top_border-1 and loc[1] < right_border:
+        while loc[0] < top_border - 1 and loc[1] < right_border:
             loc[0] += 2
             loc[1] += 1
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] < top_border and loc[1] < right_border-1:
+        while loc[0] < top_border and loc[1] < right_border - 1:
             loc[0] += 1
             loc[1] += 2
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] < top_border-1 and loc[1] > left_border:
+        while loc[0] < top_border - 1 and loc[1] > left_border:
             loc[0] += 2
             loc[1] -= 1
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] < top_border and loc[1] > left_border+1:
+        while loc[0] < top_border and loc[1] > left_border + 1:
             loc[0] += 1
             loc[1] -= 2
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] > bottom_border+1 and loc[1] < right_border:
+        while loc[0] > bottom_border + 1 and loc[1] < right_border:
             loc[0] -= 2
             loc[1] += 1
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] > bottom_border and loc[1] < right_border-1:
+        while loc[0] > bottom_border and loc[1] < right_border - 1:
             loc[0] -= 1
             loc[1] += 2
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] > bottom_border+1 and loc[1] > left_border:
+        while loc[0] > bottom_border + 1 and loc[1] > left_border:
             loc[0] -= 2
             loc[1] -= 1
             possible_moves.append([loc[0], loc[1]])
         loc = self.get_location()
-        while loc[0] > bottom_border and loc[1] > left_border+1:
+        while loc[0] > bottom_border and loc[1] > left_border + 1:
             loc[0] -= 1
             loc[1] -= 2
             possible_moves.append([loc[0], loc[1]])
@@ -139,10 +139,35 @@ class Piece:
         pass
 
 
+class Moves:
+    def __int__(self, loc: list):
+        self.row = loc[0]
+        self.column = loc[1]
 
+    def find_diagonal(self):  # מתייחס למיקום של חייל ולא למיקום של משבצת
+        if self.row < self.column:
+            return self.column - self.row
+        else:
+            return 0
 
+    def diagonal(self):  # must test it
+        axis = self.find_diagonal()
+        diag = np.diagonal(board, axis=axis)
 
+    def flipped_diagonal(self):  # must test it
+        flipped_board = np.fliplr(board)
+        distance = abs(self.row - 4)
+        if self.row < 4:
+            self.row = self.row + distance
+        else:
+            self.row = self.row - distance
 
+        axis = self.find_diagonal()
+        diagonal_indices = []
+        for index, x in np.ndenumerate(board, axis=axis):
+            # diag = np.diagonal(board, axis=axis)
+            diagonal_indices.append(index)
+        return diagonal_indices
 
 
 if __name__ == "__main__":  # preffered: change locations on the board not only in the piece location
@@ -164,3 +189,22 @@ if __name__ == "__main__":  # preffered: change locations on the board not only 
     BQ = Piece([0, 4], 2, 'queen_moves')
     WKING = Piece([-1, 5], 1, 'king_moves')
     BKING = Piece([0, 5], 2, 'king_moves')
+    WP1 = Piece([6,0],1,'white_pawn_moves')
+    WP2 = Piece([6, 1], 1, 'white_pawn_moves')
+    WP3 = Piece([6, 2], 1, 'white_pawn_moves')
+    WP4 = Piece([6, 3], 1, 'white_pawn_moves')
+    WP5 = Piece([6, 4], 1, 'white_pawn_moves')
+    WP6 = Piece([6, 5], 1, 'white_pawn_moves')
+    WP7 = Piece([6, 6], 1, 'white_pawn_moves')
+    WP8 = Piece([6, 7], 1, 'white_pawn_moves')
+    BP1 = Piece([1, 0], 2, 'black_pawn_moves')
+    BP2 = Piece([1, 1], 2, 'black_pawn_moves')
+    BP3 = Piece([1, 2], 2, 'black_pawn_moves')
+    BP4 = Piece([1, 3], 2, 'black_pawn_moves')
+    BP5 = Piece([1, 4], 2, 'black_pawn_moves')
+    BP6 = Piece([1, 5], 2, 'black_pawn_moves')
+    BP7 = Piece([1, 6], 2, 'black_pawn_moves')
+    BP8 = Piece([1, 7], 2, 'black_pawn_moves')
+
+
+
