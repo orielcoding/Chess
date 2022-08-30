@@ -5,9 +5,10 @@ import chess_definitions
 
 class Game:
     def __init__(self):
-        self.board = chess_definitions.Board.create_board()
-        self.piece = chess_definitions.Piece
+        self.gameBoard = chess_definitions.Board()
+        self.pieces = []
         self.color_turn = 0
+
 
     def enter_move(self, color: int):
         color_dictionary = {0: "White's turn: ", 1: "Black's turn: "}
@@ -22,15 +23,8 @@ class Game:
             return location(a)
         raise ValueError('ileggal square was entered, please enter existing square')
 
-    def color_move_validation(self,color):
-        pass
-
-    def legal_move(self, Turn):  # whether specific piece can act, additional to the other conditions.
-        '''# move is legal if none of the pieces of the same color doesn't occupy the specific cube,
-        # or one of the cubes leading to the specific cube from the current location of the moving piece
-        # possibly needs to be defined inside movement method in Piece class.#
-        # special case for the king'''
-        pass
+    def color_move_validation(self,chosen_location_color,location):
+        if self.pieces. ==
 
     def is_in_check(self):
         '''# if the king occupies the way of one of piece possible movement steps from opposite color,
@@ -65,14 +59,23 @@ class Game:
         # deletes pawn instance and create new piece instance at the same location.
         pass
 
-    def turn(self):
-        GAMEON = True
-        while GAMEON:
-            color = self.color_turn
-            move = self.enter_move(color)
-            self.move_is_in_board(color, move)  # should i call enter move from inside move is in board?
+    def turn(self, color, board):
+        color = self.color_turn
+        move = self.enter_move(color)
+        location = self.move_is_in_board(color, move)  # should i call enter move from inside move is in board?
+        self.color_move_validation(color, location)
+
+    def play(self):
+        game_on = True
+        while game_on:
+            self.turn()
+            if self.is_in_checkmate():
+                game_on = False
+            return self.color_turn  # need to switch the integer back to str by dictionary created at enter_move
+
 
 
 if __name__ == "__main__":
     game = Game()
-    game.play()
+    winning_color=game.play()
+    print(winning_color, " WON!")
