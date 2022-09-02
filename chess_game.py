@@ -4,15 +4,63 @@ import chess_definitions
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, color=0):
         self.gameBoard = chess_definitions.Board()
-        self.pieces = []
-        self.color_turn = 0
-
+        self.color = color  # color updates every turn
+        self.pieces = {
+            "WB1": chess_definitions.Piece(0, 'bishop_moves'),
+            "BB1": chess_definitions.Piece([0, 2], 1, 'bishop_moves'),
+            "WB2": chess_definitions.Piece([-1, 5], 0, 'bishop_moves'),
+            "BB2": chess_definitions.Piece([0, 5], 1, 'bishop_moves'),
+            "WR1": chess_definitions.Piece([-1, ], 0, 'rook_moves'),
+            "BR1": chess_definitions.Piece([0, 0], 1, 'rook_moves'),
+            "WR2": chess_definitions.Piece([-1, 7], 0, 'rook_moves'),
+            "BR2": chess_definitions.Piece([0, 7], 1, 'rook_moves'),
+            "WK1": chess_definitions.Piece([-1, 1], 0, 'knight_jumps'),
+            "BK1": chess_definitions.Piece([0, 1], 1, 'knight_jumps'),
+            "WK2": chess_definitions.Piece([-1, 6], 0, 'knight_jumps'),
+            "BK2": chess_definitions.Piece([0, 6], 1, 'knight_jumps'),
+            "WQ": chess_definitions.Piece([-1, 4], 0, 'queen_moves'),
+            "BQ": chess_definitions.Piece([0, 4], 1, 'queen_moves'),
+            "WKING": chess_definitions.Piece([-1, 5], 0, 'king_moves'),
+            "BKING": chess_definitions.Piece([0, 5], 1, 'king_moves'),
+            "WP1": chess_definitions.Piece([6, 0], 0, 'white_pawn_moves'),
+            "WP2": chess_definitions.Piece([6, 1], 0, 'white_pawn_moves'),
+            "WP3": chess_definitions.Piece([6, 2], 0, 'white_pawn_moves'),
+            "WP4": chess_definitions.Piece([6, 3], 0, 'white_pawn_moves'),
+            "WP5": chess_definitions.Piece([6, 4], 0, 'white_pawn_moves'),
+            "WP6": chess_definitions.Piece([6, 5], 0, 'white_pawn_moves'),
+            "WP7": chess_definitions.Piece([6, 6], 0, 'white_pawn_moves'),
+            "WP8": chess_definitions.Piece([6, 7], 0, 'white_pawn_moves'),
+            "BP1": chess_definitions.Piece([1, 0], 1, 'black_pawn_moves'),
+            "BP2": chess_definitions.Piece([1, 1], 1, 'black_pawn_moves'),
+            "BP3": chess_definitions.Piece([1, 2], 1, 'black_pawn_moves'),
+            "BP4": chess_definitions.Piece([1, 3], 1, 'black_pawn_moves'),
+            "BP5": chess_definitions.Piece([1, 4], 1, 'black_pawn_moves'),
+            "BP6": chess_definitions.Piece([1, 5], 1, 'black_pawn_moves'),
+            "BP7": chess_definitions.Piece([1, 6], 1, 'black_pawn_moves'),
+            "BP8": chess_definitions.Piece([1, 7], 1, 'black_pawn_moves')
+        }
+        for pawn in range(8):
+            self.gameBoard.set_initial_squares([6, pawn], self.pieces["WP" + str(pawn + 1)])
+            self.gameBoard.set_initial_squares([1, pawn], self.pieces["BP" + str(pawn + 1)])
+        for bishop in (2, 5):
+            self.gameBoard.set_initial_squares([7, bishop], self.pieces["WB" + str(bishop + 1)])
+            self.gameBoard.set_initial_squares([0, bishop], self.pieces["BB" + str(bishop + 1)])
+        for rook in (0, 7):
+            self.gameBoard.set_initial_squares([7, rook], self.pieces["WR" + str(rook + 1)])
+            self.gameBoard.set_initial_squares([0, rook], self.pieces["BR" + str(rook + 1)])
+        for knight in (1, 6):
+            self.gameBoard.set_initial_squares([7, knight], self.pieces["WK" + str(knight + 1)])
+            self.gameBoard.set_initial_squares([0, knight], self.pieces["BK" + str(knight + 1)])
+        self.gameBoard.set_initial_squares([7, 4], self.pieces["WQ"])
+        self.gameBoard.set_initial_squares([0, 4], self.pieces["BQ"])
+        self.gameBoard.set_initial_squares([7, 5], self.pieces["WKING"])
+        self.gameBoard.set_initial_squares([0, 5], self.pieces["BKING"])
 
     def enter_move(self, color: int):
         color_dictionary = {0: "White's turn: ", 1: "Black's turn: "}
-        move = input(f"{color_dictionary[color]} enter move. format example: A2->A3")
+        move = input(f"{color_dictionary[self.color]} enter move. format example: A2->A3")
         return move
 
     def move_is_in_board(self, color, move):  # if an input is an existing square, returns the square as int list
@@ -23,8 +71,17 @@ class Game:
             return location(a)
         raise ValueError('ileggal square was entered, please enter existing square')
 
-    def color_move_validation(self,chosen_location_color,location):
-        if self.pieces. ==
+    def color_move_validation(self, location: list):  # location is both the current and target squares
+        if self.gameBoard.get_square_state(location[0]).color == self.color:
+            pass
+        else:
+            raise TypeError('only ', self.color, ' can move, please move a piece of that color')
+        if self.gameBoard.get_square_state(location[1]).color != self.color:
+            pass
+        else:
+            raise TypeError("piece can't land on square populated by piece of the same color" ) # do i want type error?
+
+    def type_move_validation(self,  ):
 
     def is_in_check(self):
         '''# if the king occupies the way of one of piece possible movement steps from opposite color,
@@ -60,9 +117,9 @@ class Game:
         pass
 
     def turn(self, color, board):
-        color = self.color_turn
+        color = self.color
         move = self.enter_move(color)
-        location = self.move_is_in_board(color, move)  # should i call enter move from inside move is in board?
+        location = self.move_is_in_board(color, move)
         self.color_move_validation(color, location)
 
     def play(self):
@@ -71,11 +128,10 @@ class Game:
             self.turn()
             if self.is_in_checkmate():
                 game_on = False
-            return self.color_turn  # need to switch the integer back to str by dictionary created at enter_move
-
+            return self.color  # need to switch the integer back to str by dictionary created at enter_move
 
 
 if __name__ == "__main__":
     game = Game()
-    winning_color=game.play()
+    winning_color = game.play()
     print(winning_color, " WON!")
