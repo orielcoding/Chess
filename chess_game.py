@@ -9,37 +9,37 @@ class Game:
         self.color = color  # color updates every turn
         self.pieces = {
             "WB1": chess_definitions.Piece(0, 'bishop_moves'),
-            "BB1": chess_definitions.Piece([0, 2], 1, 'bishop_moves'),
-            "WB2": chess_definitions.Piece([-1, 5], 0, 'bishop_moves'),
-            "BB2": chess_definitions.Piece([0, 5], 1, 'bishop_moves'),
-            "WR1": chess_definitions.Piece([-1, ], 0, 'rook_moves'),
-            "BR1": chess_definitions.Piece([0, 0], 1, 'rook_moves'),
-            "WR2": chess_definitions.Piece([-1, 7], 0, 'rook_moves'),
-            "BR2": chess_definitions.Piece([0, 7], 1, 'rook_moves'),
-            "WK1": chess_definitions.Piece([-1, 1], 0, 'knight_jumps'),
-            "BK1": chess_definitions.Piece([0, 1], 1, 'knight_jumps'),
-            "WK2": chess_definitions.Piece([-1, 6], 0, 'knight_jumps'),
-            "BK2": chess_definitions.Piece([0, 6], 1, 'knight_jumps'),
-            "WQ": chess_definitions.Piece([-1, 4], 0, 'queen_moves'),
-            "BQ": chess_definitions.Piece([0, 4], 1, 'queen_moves'),
-            "WKING": chess_definitions.Piece([-1, 5], 0, 'king_moves'),
-            "BKING": chess_definitions.Piece([0, 5], 1, 'king_moves'),
-            "WP1": chess_definitions.Piece([6, 0], 0, 'white_pawn_moves'),
-            "WP2": chess_definitions.Piece([6, 1], 0, 'white_pawn_moves'),
-            "WP3": chess_definitions.Piece([6, 2], 0, 'white_pawn_moves'),
-            "WP4": chess_definitions.Piece([6, 3], 0, 'white_pawn_moves'),
-            "WP5": chess_definitions.Piece([6, 4], 0, 'white_pawn_moves'),
-            "WP6": chess_definitions.Piece([6, 5], 0, 'white_pawn_moves'),
-            "WP7": chess_definitions.Piece([6, 6], 0, 'white_pawn_moves'),
-            "WP8": chess_definitions.Piece([6, 7], 0, 'white_pawn_moves'),
-            "BP1": chess_definitions.Piece([1, 0], 1, 'black_pawn_moves'),
-            "BP2": chess_definitions.Piece([1, 1], 1, 'black_pawn_moves'),
-            "BP3": chess_definitions.Piece([1, 2], 1, 'black_pawn_moves'),
-            "BP4": chess_definitions.Piece([1, 3], 1, 'black_pawn_moves'),
-            "BP5": chess_definitions.Piece([1, 4], 1, 'black_pawn_moves'),
-            "BP6": chess_definitions.Piece([1, 5], 1, 'black_pawn_moves'),
-            "BP7": chess_definitions.Piece([1, 6], 1, 'black_pawn_moves'),
-            "BP8": chess_definitions.Piece([1, 7], 1, 'black_pawn_moves')
+            "BB1": chess_definitions.Piece( 1, 'bishop_moves'),
+            "WB2": chess_definitions.Piece( 0, 'bishop_moves'),
+            "BB2": chess_definitions.Piece( 1, 'bishop_moves'),
+            "WR1": chess_definitions.Piece( 0, 'rook_moves'),
+            "BR1": chess_definitions.Piece( 1, 'rook_moves'),
+            "WR2": chess_definitions.Piece( 0, 'rook_moves'),
+            "BR2": chess_definitions.Piece( 1, 'rook_moves'),
+            "WK1": chess_definitions.Piece( 0, 'knight_jumps'),
+            "BK1": chess_definitions.Piece( 1, 'knight_jumps'),
+            "WK2": chess_definitions.Piece( 0, 'knight_jumps'),
+            "BK2": chess_definitions.Piece( 1, 'knight_jumps'),
+            "WQ": chess_definitions.Piece( 0, 'queen_moves'),
+            "BQ": chess_definitions.Piece( 1, 'queen_moves'),
+            "WKING": chess_definitions.Piece( 0, 'king_moves'),
+            "BKING": chess_definitions.Piece( 1, 'king_moves'),
+            "WP1": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP2": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP3": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP4": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP5": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP6": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP7": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "WP8": chess_definitions.Piece( 0, 'white_pawn_moves'),
+            "BP1": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP2": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP3": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP4": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP5": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP6": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP7": chess_definitions.Piece( 1, 'black_pawn_moves'),
+            "BP8": chess_definitions.Piece( 1, 'black_pawn_moves')
         }
         for pawn in range(8):
             self.gameBoard.set_initial_squares([6, pawn], self.pieces["WP" + str(pawn + 1)])
@@ -81,7 +81,19 @@ class Game:
         else:
             raise TypeError("piece can't land on square populated by piece of the same color" ) # do i want type error?
 
-    def type_move_validation(self,  ):
+    def movement_type_validation(self, location: list):
+        piece=self.gameBoard.get_square_state(location[0]) # returns the object in specific square
+        target_square=location[1]
+        if target_square not in piece.available_squares():
+            raise TypeError(piece, " can't move to the requested square" )
+
+    def path_interruptions_validation(self, location: list):
+        piece = self.gameBoard.get_square_state(location[0])  # returns the object in specific square
+        target_square = location[1]
+        if piece != "WK1" and piece != "WK2" and piece != "BK1" and piece != "BK2": # if piece is knight then path doesn't matter
+            squares_to_check = piece.available_squares()  # returns list of squares in the way
+
+
 
     def is_in_check(self):
         '''# if the king occupies the way of one of piece possible movement steps from opposite color,
