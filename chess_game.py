@@ -9,21 +9,23 @@ class Game:
         self.curr_color = color  # color updates every turn
 
         for pawn_location in range(8):
-            self.gameBoard.set_initial_squares((6, pawn_location), chess_definitions.Piece(0, "white_pawn"))
-            self.gameBoard.set_initial_squares((1, pawn_location), chess_definitions.Piece(1, "black_pawn"))
+            self.gameBoard.set_initial_squares((6, pawn_location), chess_definitions.Pawn(0))
+            self.gameBoard.set_initial_squares((1, pawn_location), chess_definitions.Pawn(1))
         for bishop_location in [2, 5]:
-            self.gameBoard.set_initial_squares((7, bishop_location), chess_definitions.Piece(0, "bishop"))
-            self.gameBoard.set_initial_squares((0, bishop_location), chess_definitions.Piece(1, "bishop"))
+            self.gameBoard.set_initial_squares((7, bishop_location), chess_definitions.Bishop(0))
+            self.gameBoard.set_initial_squares((0, bishop_location), chess_definitions.Bishop(1))
         for rook_location in [0, 7]:
-            self.gameBoard.set_initial_squares((7, rook_location), chess_definitions.Piece(0, "rook"))
-            self.gameBoard.set_initial_squares((0, rook_location), chess_definitions.Piece(1, "rook"))
+            self.gameBoard.set_initial_squares((7, rook_location), chess_definitions.Rook(0))
+            self.gameBoard.set_initial_squares((0, rook_location), chess_definitions.Rook(1))
         for knight_location in [1, 6]:
-            self.gameBoard.set_initial_squares((7, knight_location), chess_definitions.Piece(0, "knight"))
-            self.gameBoard.set_initial_squares((0, knight_location), chess_definitions.Piece(1, "knight"))
-        self.gameBoard.set_initial_squares((7, 3), chess_definitions.Piece(0, "queen"))
-        self.gameBoard.set_initial_squares((0, 3), chess_definitions.Piece(1, "queen"))
-        self.gameBoard.set_initial_squares((7, 4), chess_definitions.Piece(0, "king"))
-        self.gameBoard.set_initial_squares((0, 4), chess_definitions.Piece(1, "king"))
+            self.gameBoard.set_initial_squares((7, knight_location), chess_definitions.Knight(0))
+            self.gameBoard.set_initial_squares((0, knight_location), chess_definitions.Knight(1))
+        self.gameBoard.set_initial_squares((7, 3), chess_definitions.Queen(0))
+        self.gameBoard.set_initial_squares((0, 3), chess_definitions.Queen(1))
+        self.gameBoard.set_initial_squares((7, 4), chess_definitions.King(0))
+        self.gameBoard.set_initial_squares((0, 4), chess_definitions.King(1))
+
+    kings_location = {0: (7, 4), 1: (0, 4)}  # needs to be updated every time king is moving
 
     def enter_move(self, color: int):
         color_dictionary = {0: "White's turn", 1: "Black's turn"}
@@ -35,34 +37,44 @@ class Game:
         if a:  # for programmer, not user
             location_func = lambda loc_str: ((7 - (int(a.group(1)[1]) - 1), (ord(a.group(1).lower()[0]) - ord("a"))),
                                              (7 - (int(a.group(2)[1]) - 1), (ord(a.group(2).lower()[0]) - ord("a"))))
-            print(location_func(move))
             return location_func(move)
         raise ValueError('illegal square was entered, please enter existing square')
 
-    def color_move_validation(self, location: tuple):  # location is both the current and target squares
+    def color_move_validation(self, move: tuple):  # location is both the current and target squares
         color_dict = {0: "white", 1: "black"}
-        if self.gameBoard.get_square_state(location[0]).color != self.curr_color:
+        if self.gameBoard.get_square_state(move[0]).color != self.curr_color:
             raise TypeError(f'only {color_dict[self.curr_color]} can move, please move a piece of that color')
 
-        if self.gameBoard.get_square_state(location[1]) is not None and self.gameBoard.get_square_state(
-                location[1]).color == self.curr_color:
+        if self.gameBoard.get_square_state(move[1]) is not None and self.gameBoard.get_square_state(
+                move[1]).color == self.curr_color:
             raise TypeError("piece can't land on square populated by piece of the same color")  # do i want type error?
 
-    def movement_type_validation(self, location: tuple):
-        piece = self.gameBoard.get_square_state(location[0])  # returns the object in specific square
-        target_square = location[1]
-        if target_square not in piece.available_squares():
+    def movement_type_validation(self, move: tuple):
+        piece = self.gameBoard.get_square_state(move[0])  # returns the object in specific square
+        if piece != chess_definitions.Knight:
+            direction = chess_definitions.Coordinates(move).sign_vector
+        else:
+            direction = chess_definitions.Coordinates(move).vector
+        if direction not in piece.sign_vector():
             raise TypeError(f"{piece} can't move to the requested square")
 
-    def path_interruptions_validation(self, location: tuple):
-        piece: chess_definitions.Piece = self.gameBoard.get_square_state(location[0])  # returns the object in specific square
-        if piece.type != "knight":
-            vector = np.array(location[1][i] - location[0][i] for i in range(2))
-            sign_vector = np.sign(vector)  # tuple of arrays
-            squares_to_check = list(np.array(location[0])+sign_vector*np.array([i,i]) for i in range(max(vector//sign_vector))) # אוריינטציה הפוכה לשורות
+    def path_interruptions_validation(self, move: tuple):
+        piece = self.gameBoard.get_square_state(move[0])  # returns the object in specific square
+        if piece != chess_definitions.Knight:
+            squares_to_check = chess_definitions.Coordinates(move).squares_path()
             for square in squares_to_check:
                 if self.gameBoard.get_square_state(tuple(square)).color == self.curr_color:
-                    raise ValueError("move is not possible")  # might define new error
+                    raise chess_definitions.PathError("move is not possible")  # might define new error
+
+    def is_revealing_king(self, move: tuple): # todo add case prevents king steps into check
+        locations = (Game.kings_location[self.curr_color], move[1])
+        sign_vector_from_king = chess_definitions.Coordinates(locations).sign_vector
+        squares_to_check = chess_definitions.Coordinates(locations).squares_path()
+        for square in squares_to_check:
+            piece = self.gameBoard.get_square_state(square)
+            if piece.color != self.curr_color:
+                if sign_vector_from_king in piece.sign_vector() and piece != (chess_definitions.Pawn or chess_definitions.King):
+                    raise chess_definitions.ExposeKingError("move is illegal, it exposes the king")
 
     def is_in_check(self):
         '''# if the king occupies the way of one of piece possible movement steps from opposite color,
@@ -79,13 +91,10 @@ class Game:
         # returns boolean
         pass
 
-    def el_passant(self):
+    def el_passant(self):  # need to be called from movement_type_validation
         '''# occur only when W pawn in the 5th line(4) and the B pawn in the 4th line(3),
         # and if neighbor of opposite color jumps 2 steps forward - a specific step takes place from pawn moves.'''
         # returns additional movement option for specific pawn
-        pass
-
-    def eat_piece(self):  # the piece which was in the cube to which the current piece stepped into disappear.
         pass
 
     def castling(self):  # can happen as long as there isn't current check/the king pass underneath check,
@@ -93,16 +102,32 @@ class Game:
         # return additional movement option for king+rook combined.
         pass
 
-    def promotion(self):  # occur when a W/B pawn reach the top/bottom border accordingly.
-        # deletes pawn instance and create new piece instance at the same location.
-        pass
+    def promotion(self, move: tuple):
+        new_piece = None
+        piece = self.gameBoard.get_square_state(move[0])
+        if move[1][0] == 0 and self.curr_color == 0 and piece == chess_definitions.Pawn:
+            new_piece = input("choose promoted piece: (Q / R / K / B) ")
+        elif move[1][0] == 7 and self.curr_color == 1 and piece == chess_definitions.Pawn:
+            new_piece = input("choose promoted piece: (Q / R / K / B) ")
+        if new_piece:
+            a = re.match('^[ ]{0,3}(Q|q|R|r|K|k|B|b)[ ]{0,3}$', new_piece)
+            if not a:
+                raise TypeError("please choose one of the following characters: Q / R / K / B ")
+            if new_piece == ("Q" or "q"):
+                self.gameBoard.set_square_state(move[1],chess_definitions.Queen(self.curr_color))
+            elif new_piece == ("R" or "r"):
+                self.gameBoard.set_square_state(move[1],chess_definitions.Rook(self.curr_color))
+            elif new_piece == ("K" or "k"):
+                self.gameBoard.set_square_state(move[1],chess_definitions.Knight(self.curr_color))
+            else:
+                self.gameBoard.set_square_state(move[1],chess_definitions.Bishop(self.curr_color))
 
-    def is_valid_move(self):
-        location = self.move_is_in_board(move)
-        try:
-            self.color_move_validation(location)
-        except TypeError as e:
-            print(e)
+    # def is_valid_move(self):
+    #     location = self.move_is_in_board(move)
+    #     try:
+    #         self.color_move_validation(location)
+    #     except TypeError as e:
+    #         print(e)
 
     def turn(self):
         print(self.gameBoard)
@@ -120,6 +145,8 @@ class Game:
             except TypeError as e:
                 print(e)
 
+        if self.gameBoard.get_square_state(location[0]) == "king":
+            Game.kings_location[color] = tuple(location[0])
 
     def play(self):
         game_on = True
