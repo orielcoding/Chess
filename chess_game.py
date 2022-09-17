@@ -46,7 +46,8 @@ class Game:
             return location_func(move)
         raise ValueError('illegal square was entered, please enter existing square')
 
-    def color_move_validation(self, move: tuple):  # location is both the current and target squares
+    def color_move_validation(self, move: tuple):  # move is both the current and target squares
+        # todo fix pawn- it cant go forward to piece of any color (not even enemy piece)
         if self.gameBoard.get_square_state(move[0]) is not None and \
                 self.gameBoard.get_square_state(move[0]).color != self.curr_color:
             raise chess_definitions.WrongColorError(f'only {Game.color_dict[self.curr_color]} can move, please move a piece of that color')
@@ -72,15 +73,25 @@ class Game:
                     raise chess_definitions.PathError("move is not possible")
 
     def is_revealing_king(self, move: tuple):  # todo add case prevents king steps into check
-        locations = (Game.kings_location[self.curr_color], move[1])
-        sign_vector_from_king = chess_definitions.Coordinates(locations).sign_vector
-        squares_to_check = chess_definitions.Coordinates(locations).squares_path()
+        '''this method assures that the move chosen doesn't expose the king to a threatening piece.
+            it is done by checking the direction of the board which connects the king and the moving piece.'''
+        locations_king_moving_piece: tuple = (Game.kings_location[self.curr_color], move[0])
+        direction_from_king: np.ndarray = chess_definitions.Coordinates(locations_king_moving_piece).sign_vector
+        farthest_possible_threatening_piece = chess_definitions.Coordinates(locations_king_moving_piece).farthest_distance()
+        locations_king_farthest_piece = (move[0],tuple(farthest_possible_threatening_piece))
+        squares_to_check: np.ndarray = chess_definitions.Coordinates(locations_king_farthest_piece).squares_path()
+        future_board = self.gameBoard
+        future_board.set_square_state(move,future_board.get_square_state(move[0]))
+        # used to stimulate new piece location which might still block enemy path to the king
         for square in squares_to_check:
-            piece = self.gameBoard.get_square_state(square)
-            if piece.color != self.curr_color:
-                if sign_vector_from_king in piece.sign_vector() and piece != (
-                        chess_definitions.Pawn or chess_definitions.King):
+            piece = future_board.get_square_state(tuple(square))
+            if piece is not None and piece.color != self.curr_color:
+                if np.any([np.array_equal(direction_from_king, element) for element in list(piece.sign_vector())])\
+                        and piece != chess_definitions.Pawn and piece != chess_definitions.King:
+                    # checks that enemy piece can't reach the exposed king
                     raise chess_definitions.ExposeKingError("move is illegal, it exposes the king")
+            elif piece is not None and piece.color == self.curr_color:
+                break
 
     def is_in_check(self):
         '''# if the king occupies the way of one of piece possible movement steps from opposite color,
@@ -115,7 +126,7 @@ class Game:
     def promotion(self, move: tuple):
         new_piece = None
         piece = self.gameBoard.get_square_state(move[0])
-        if move[1][0] == 0 and self.curr_color == 0 and piece == chess_definitions.Pawn:
+        if move[1][0] == 0 and self.curr_color == 0 and piece == chess_definitions.Pawn:  # asume no piece on first rank
             new_piece = input("choose promoted piece: (Q / R / K / B) ")
         elif move[1][0] == 7 and self.curr_color == 1 and piece == chess_definitions.Pawn:
             new_piece = input("choose promoted piece: (Q / R / K / B) ")
@@ -129,7 +140,7 @@ class Game:
                 self.gameBoard.set_square_state(move[1], chess_definitions.Rook(self.curr_color))
             elif new_piece == ("K" or "k"):
                 self.gameBoard.set_square_state(move[1], chess_definitions.Knight(self.curr_color))
-            else:
+            elif new_piece == ("B" or "b"):
                 self.gameBoard.set_square_state(move[1], chess_definitions.Bishop(self.curr_color))
 
     def is_valid_move(self, move: str):
