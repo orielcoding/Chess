@@ -18,7 +18,7 @@ def test_move_is_in_board():
         game.move_is_in_board("n7:h3")
 
 
-def test_color_move_validation():
+def test_color_move_validation():  # todo add case of pawn steps into enemy's pawn
     game = chess_game.Game()
     with pytest.raises(chess_definitions.WrongColorError) as e_info:
         game.color_move_validation(((7, 0), (6, 0)))
@@ -83,3 +83,24 @@ def test_path_interruptions_validation():
     with pytest.raises(ValueError) as e_info:
         game.path_interruptions_validation(((0, 1), (4,5)),chess_definitions.Bishop(0))
 
+
+def test_is_revealing_king():
+    game1 = chess_game.Game()
+    game1.gameBoard.set_square_state(((0,5),(4,1)),chess_definitions.Bishop(1))
+    with pytest.raises(chess_definitions.ExposeKingError) as e_info:
+        game1.is_revealing_king(((6,3),(5,3)))
+
+    game2 = chess_game.Game()
+    game2.gameBoard.set_square_state(((0, 5), (4, 1)), chess_definitions.Rook(1))
+    assert game2.is_revealing_king(((6, 3), (5, 3))) is None
+
+    game3 = chess_game.Game()
+    game3.gameBoard.set_square_state(((0, 5), (4, 1)), chess_definitions.Bishop(1))
+    game3.gameBoard.set_square_state(((7, 2), (6, 3)), chess_definitions.Bishop(0))
+    assert game3.is_revealing_king(((6, 3), (5, 2))) is None
+
+def test_promotion():
+    game = chess_game.Game()
+    assert game.promotion(((1,0),(2,0))) is None
+    with pytest.raises(TypeError) as e_info:
+        game.promotion(((1,0),(0,0)))
