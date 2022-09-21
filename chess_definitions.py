@@ -28,6 +28,7 @@ class ExposeKingError(ValueError):
 class EnPassantError(TypeError):
     pass
 
+
 class Piece:
     color_dict = {0: "W", 1: "B"}
 
@@ -86,7 +87,7 @@ class Board:
     def set_initial_squares(self, location: Location, piece: Piece):
         self.board_matrix[location] = piece
 
-    def set_square_state(self, locations: Locations_List, piece: Piece = None): # None default takes care of el-passan
+    def set_square_state(self, locations: Locations_List, piece: Piece = None):  # None default takes care of el-passan
         self.board_matrix[locations[0]] = None  # the current square
         if piece:
             self.board_matrix[locations[1]] = piece

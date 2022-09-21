@@ -30,9 +30,8 @@ def test_color_move_validation():  # todo add case of pawn steps into enemy's pa
     assert try_2 is None
 
     # test if pawn will not step into enemy's piece
-    game.gameBoard.set_square_state(chess_game.Locations_List([(1, 2), (5, 2)]), chess_definitions.Pawn(1))
     with pytest.raises(TypeError):
-        game.color_move_validation(chess_game.Locations_List([(6, 2), (5, 2)]), chess_definitions.Pawn(1))
+        game.color_move_validation(chess_game.Locations_List([(5, 2), (6, 2)]), chess_definitions.Pawn(1))
 
 
 def test_coordinates():
@@ -58,16 +57,25 @@ def test_squares_path():  # doesn't test real moves.
 
 
 def test_movement_type_validation():
-    game = chess_game
+    game = chess_game.Game()
     with pytest.raises(ValueError) as e_info:
-        game.movement_type_validation(chess_game.Locations_List([(6, 0), (6, 1)]),
-                                      chess_definitions.Pawn(0))  # pawn needs private case of eating
+        game.movement_type_validation(chess_game.Locations_List([(6, 0), (6, 1)]), chess_definitions.Pawn(0))
     with pytest.raises(ValueError) as e_info:
         game.movement_type_validation(chess_game.Locations_List([(5, 0), (6, 1)]), chess_definitions.Knight(0))
     with pytest.raises(ValueError) as e_info:
         game.movement_type_validation(chess_game.Locations_List([(2, 0), (5, 0)]), chess_definitions.Bishop(0))
     with pytest.raises(ValueError) as e_info:
         game.movement_type_validation(chess_game.Locations_List([(6, 0), (3, 3)]), chess_definitions.Rook(0))
+    # testing pawn eating:
+    with pytest.raises(ValueError) as e_info:
+        game.movement_type_validation(chess_game.Locations_List([(5, 0), (6, 1)]), chess_definitions.Pawn(1))
+    # testing en-passant
+    with pytest.raises(chess_definitions.EnPassantError) as e_info:
+        game.movement_type_validation(chess_game.Locations_List([(4, 3), (3, 4)]), chess_definitions.Pawn(0))
+
+    game.last_move = chess_definitions.Locations_List([(1,0),(3,0)])
+    game.last_move_type = chess_definitions.Pawn
+    assert game.movement_type_validation(chess_game.Locations_List([(3, 1), (2, 0)]), chess_definitions.Pawn(0)) is None
 
 
 def test_get_square_state():
