@@ -27,23 +27,37 @@ class Game:
         self.last_move_type: chess_definitions.Piece = None
         self.check = False
         self.checkmate = False
+        self.black_pieces_loc = set()
+        self.white_pieces_loc = set()
 
         for pawn_location in range(8):
             self.gameBoard.set_initial_squares(Location((6, pawn_location)), chess_definitions.Pawn(0))
+            self.white_pieces_loc.add(Location((6, pawn_location)))
             self.gameBoard.set_initial_squares(Location((1, pawn_location)), chess_definitions.Pawn(1))
+            self.black_pieces_loc.add(Location((1, pawn_location)))
         for bishop_location in [2, 5]:
             self.gameBoard.set_initial_squares(Location((7, bishop_location)), chess_definitions.Bishop(0))
+            self.white_pieces_loc.add(Location((7, bishop_location)))
             self.gameBoard.set_initial_squares(Location((0, bishop_location)), chess_definitions.Bishop(1))
+            self.black_pieces_loc.add(Location((0, bishop_location)))
         for rook_location in [0, 7]:
             self.gameBoard.set_initial_squares(Location((7, rook_location)), chess_definitions.Rook(0))
+            self.white_pieces_loc.add(Location((7, rook_location)))
             self.gameBoard.set_initial_squares(Location((0, rook_location)), chess_definitions.Rook(1))
+            self.black_pieces_loc.add(Location((0, rook_location)))
         for knight_location in [1, 6]:
             self.gameBoard.set_initial_squares(Location((7, knight_location)), chess_definitions.Knight(0))
+            self.white_pieces_loc.add(Location((7, knight_location)))
             self.gameBoard.set_initial_squares(Location((0, knight_location)), chess_definitions.Knight(1))
+            self.black_pieces_loc.add(Location((0, knight_location)))
         self.gameBoard.set_initial_squares(Location((7, 3)), chess_definitions.Queen(0))
+        self.white_pieces_loc.add(Location((7, 3)))
         self.gameBoard.set_initial_squares(Location((0, 3)), chess_definitions.Queen(1))
+        self.black_pieces_loc.add(Location((0, 3)))
         self.gameBoard.set_initial_squares(Location((7, 4)), chess_definitions.King(0))
+        self.white_pieces_loc.add(Location((7, 4)))
         self.gameBoard.set_initial_squares(Location((0, 4)), chess_definitions.King(1))
+        self.black_pieces_loc.add(Location((0, 4)))
 
     def enter_move(self) -> str:
         color_turn_dictionary = {0: "White's turn", 1: "Black's turn"}
@@ -88,7 +102,7 @@ class Game:
         elif type(piece) == chess_definitions.King:
             if chess_definitions.Coordinates(move).vector == np.array([0, 2]):
                 self.castling(move, "right")
-            elif chess_definitions.Coordinates(move).vector == np.array([0, -3]):
+            elif chess_definitions.Coordinates(move).vector == np.array([0, -2]):
                 self.castling(move, "left")
             else:
                 raise ValueError(f"{piece} can't reach to target square")
@@ -140,14 +154,23 @@ class Game:
             elif piece is not None and piece.color == self.curr_color:
                 break
 
-    def is_in_check(self):
+    def is_in_check(self, king_loc: Location) -> bool:
         """if the king occupies the way of one of piece possible movement steps from opposite color,
         and none of the pieces of the kings color doesn't stand in the "way"- (way isn't defined currently).
         this method defines new definition for legal move for the next "turn":
         either the king must evacuate to one of his possible squares, or one of the pieces must stand in the "way"
         of the attacking piece"""
         # calls to the function is_in_checkmate.
-        return self.check
+        if self.curr_color:
+            piece_list = self.white_pieces_loc
+        else:
+            piece_list = self.black_pieces_loc
+        for location in piece_list:
+            move = Locations_List([location, king_loc])
+            if self.is_valid_move(str(move)):
+                return True
+        else:
+            return False
 
     def is_in_checkmate(self):
         """
@@ -197,7 +220,7 @@ class Game:
             elif new_piece == ("B" or "b"):
                 self.gameBoard.set_square_state(move[1], chess_definitions.Bishop(self.curr_color))
 
-    def is_valid_move(self, string_move: str) -> Locations_List:
+    def is_valid_move(self, string_move: str) -> bool:
         try:
             move = move_is_in_board(string_move)
             piece = self.gameBoard.get_square_state(move[0])
@@ -209,7 +232,7 @@ class Game:
             self.path_interruptions_validation(move,piece)
             self.is_revealing_king(move)
 
-            return move
+            return True
         except chess_definitions.PathError as e:
             print(e)
         except ValueError as e:
@@ -221,21 +244,20 @@ class Game:
     def turn(self):
         print(self.gameBoard)
         string_move = self.enter_move()  # might need to add an exception?
-        locations: Locations_List = self.is_valid_move(string_move)
-        piece: chess_definitions.Piece = self.gameBoard.get_square_state(locations[0])
+        if self.is_valid_move(string_move):
+            locations: Locations_List = move_is_in_board(string_move)
+            piece: chess_definitions.Piece = self.gameBoard.get_square_state(locations[0])
 
-        # turn updates
+            # turn updates
 
-        self.gameBoard.set_square_state(locations, self.gameBoard.get_square_state(locations[0]))
-        if self.gameBoard.get_square_state(locations[0]) == chess_definitions.King:
-            self.kings_location[self.curr_color] = locations[0]
-            self.has_moved_castling[f"{color_dict[self.curr_color]}_king"] = True
-        if self.gameBoard.get_square_state(locations[0]) == chess_definitions.Rook:
-            self.has_moved_castling[f"{rook_side}_{color_dict[self.curr_color]}_rook"] = True
-
-        game.last_move = locations
-        game.last_move_type = piece
-
+            self.gameBoard.set_square_state(locations, self.gameBoard.get_square_state(locations[0]))
+            if self.gameBoard.get_square_state(locations[0]) == chess_definitions.King:
+                self.kings_location[self.curr_color] = locations[0]
+                self.has_moved_castling[f"{color_dict[self.curr_color]}_king"] = True
+            if self.gameBoard.get_square_state(locations[0]) == chess_definitions.Rook:
+                self.has_moved_castling[f"{rook_side}_{color_dict[self.curr_color]}_rook"] = True
+            game.last_move = locations
+            game.last_move_type = piece
     def play(self):
         game_on = True
         while game_on:
@@ -244,8 +266,9 @@ class Game:
                 game_on = False
         return self.curr_color  # need to switch the integer back to str by dictionary created at enter_move
 
-
 if __name__ == "__main__":
     game = Game()
     winning_color = game.play()
     print(f"{winning_color} WON!")
+
+
