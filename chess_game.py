@@ -2,6 +2,7 @@ import numpy as np
 import re
 import chess_definitions
 from chess_definitions import Location, Locations_List
+import copy
 
 color_dict = {0: "white", 1: "black"}
 
@@ -113,15 +114,18 @@ class Game:
     def pawn_eating(self, move: Locations_List):
         """ This method is called only if moving piece of type pawn, and the move was illegal because of
             sign vector validation"""
-        rank_movement = {0: -1 , 1: 1}  # the rank vector for an eating pawn by color
+        rank_movement = {0: -1, 1: 1}  # the rank vector for an eating pawn by color
         target_square: chess_definitions.Piece = self.gameBoard.get_square_state(Location(move[1]))
         vector: np.array = chess_definitions.Coordinates(move).vector
-        if not np.any([np.array_equal(vector, element) for element in [np.array([rank_movement[self.curr_color],1]),np.array([rank_movement[self.curr_color],-1])]]):
+        if not np.any([np.array_equal(vector, element) for element in [np.array([rank_movement[self.curr_color], 1]),
+                                                                       np.array(
+                                                                               [rank_movement[self.curr_color], -1])]]):
             raise ValueError(f"{self.curr_color}_pawn can't reach to target square")
         elif target_square is None:  # assuming here by color validation if square isn't None- its of opposite color.
             if not self.en_passant(move):
                 raise chess_definitions.EnPassantError("Selected pawn can't eat with en-passant at the selected square")
-            self.gameBoard.set_square_state(self.last_move) # todo make sure its checked last. should i create member whose set up boolianly each turn?
+            self.gameBoard.set_square_state(
+                self.last_move)  # todo make sure its checked last. should i create member whose set up boolianly each turn?
 
     def path_interruptions_validation(self, move: Locations_List, piece: chess_definitions.Piece):
         if type(piece) != chess_definitions.Knight:
@@ -131,54 +135,72 @@ class Game:
                         squares_to_check) - 1:
                     raise chess_definitions.PathError("move is not possible")
 
-    def is_revealing_king(self, move: Locations_List):  # todo add case prevents king steps into check
-        """This method assures that the move chosen doesn't expose the king to a threatening piece.
-            It is done by checking whether enemy's piece located on the direction of the board which
-             connects the king and the moving piece, under several limitations."""
-        king_moving_piece_locations = Locations_List([self.kings_location[self.curr_color], move[0]])
-        king_piece_sign_vector: np.ndarray = chess_definitions.Coordinates(king_moving_piece_locations).sign_vector
-        farthest_possible_threatening_piece: np.array = chess_definitions.Coordinates(
-            king_moving_piece_locations).farthest_distance()
-        king_farthest_piece_locations = Locations_List([move[0], tuple(farthest_possible_threatening_piece)])
-        squares_to_check: np.ndarray = chess_definitions.Coordinates(king_farthest_piece_locations).squares_path()
-        future_board = self.gameBoard
-        future_board.set_square_state(move, future_board.get_square_state(move[0]))
-        # used to stimulate new piece location which might still block enemy's path to the king
-        for square in squares_to_check:
-            piece = future_board.get_square_state(Location(tuple(square)))
-            if piece is not None and piece.color != self.curr_color:  # enemy's piece
-                if np.any([np.array_equal(king_piece_sign_vector, element) for element in list(piece.sign_vector())]) \
-                        and piece != chess_definitions.Pawn and piece != chess_definitions.King:
-                    # check if piece aiming towards the king
-                    raise chess_definitions.ExposeKingError("move is illegal, it exposes the king")
-            elif piece is not None and piece.color == self.curr_color:
-                break
+    def is_revealing_king(self, move: Locations_List) -> bool:  # todo check whether the right copy was used.
+        """
+        This method assures that the move chosen doesn't expose the king to a threatening piece.
+        It is done by checking whether enemy's piece located on the direction of the board which
+        connects the king and the moving piece, depending on the enemy's piece movement type.
+        """
+        current_board = copy.copy(self.gameBoard)
+        king_current_loc = copy.copy(self.kings_location[self.curr_color])
+        if type(self.gameBoard.get_square_state(move[0])) == chess_definitions.King:
+            self.kings_location[self.curr_color] = move[1]
+        self.gameBoard.set_square_state(move, self.gameBoard.get_square_state(move[0]))  # stimulate new piece location
+        self.is_in_check(self.kings_location[self.curr_color])
+        self.gameBoard = current_board
+        self.kings_location[self.curr_color] = king_current_loc
+        if self.check:  # todo rearrange the logic so revealing king will return same as self.check
+            return False
+        else:
+            return True
 
-    def is_in_check(self, king_loc: Location) -> bool:
-        """if the king occupies the way of one of piece possible movement steps from opposite color,
+    def is_in_check(self, king_loc: Location) -> bool:  # todo call it in the beginning of the turn and at the end. after i move the piece
+        """
+        if the king occupies the way of one of piece possible movement steps from opposite color,
         and none of the pieces of the kings color doesn't stand in the "way"- (way isn't defined currently).
         this method defines new definition for legal move for the next "turn":
         either the king must evacuate to one of his possible squares, or one of the pieces must stand in the "way"
-        of the attacking piece"""
+        of the attacking piece.
+        """
         # calls to the function is_in_checkmate.
-        if self.curr_color:
-            piece_list = self.white_pieces_loc
-        else:
+        if self.curr_color == 0:  # white's turn, so need to check whether black threatens
             piece_list = self.black_pieces_loc
+        else:  # the opposite
+            piece_list = self.white_pieces_loc
         for location in piece_list:
             move = Locations_List([location, king_loc])
             if self.is_valid_move(str(move)):
-                return True
+                self.check = True
+                break
         else:
-            return False
+            self.check = False
+        return self.check
 
-    def is_in_checkmate(self):
+    def is_in_checkmate(self) -> bool:  # todo call it seperately. make sure i call the method at the proper place relative to the change in the self.curr_color. after i move the piece
         """
         occur under the same condition as is_in_check but this time the kings evacuation
         possibilities are illegal and there is no available piece to stand in the "way" of the attacking piece.
         here i need to use recursive function - operate a future board and create fake turn which examine possibilities
         until certain possibility works.
         """
+        if self.curr_color == 0:
+            piece_list = self.black_pieces_loc
+        else:
+            piece_list = self.white_pieces_loc
+        for location in piece_list:
+            move = Locations_List([location, self.kings_location[self.curr_color]])
+            squares_path: np.ndarray = chess_definitions.Coordinates(move).squares_path()
+            squares_path = np.append(squares_path, location, axis=0)  # adds attacking piece loc to the list to check.
+            for square_blocks_check in squares_path:
+                move_to_block_check=Locations_List([location, square_blocks_check])
+                if self.is_valid_move(str(move_to_block_check)):
+                    self.checkmate = False
+                    break
+            else:
+                continue  # if the code reach this line, it won't execute the following break, as wished.
+            break
+        else:
+            self.checkmate = True
         return self.checkmate
 
     def en_passant(self, move: Locations_List) -> bool:
@@ -192,13 +214,27 @@ class Game:
         else:
             return True
 
-    def castling(self, move: Locations_List, rook_side: str):
+    def castling(self, move: Locations_List, rook_side: str) -> bool:
         condition_a = f"{color_dict[self.curr_color]}_cant_castle"
         condition_b = self.has_moved_castling[f"{rook_side}_{color_dict[self.curr_color]}_rook"]
         if condition_a or condition_b:
             raise ValueError("illegal move")
-        # todo check if squares are threatened
-        self.gameBoard.set_square_state(move, chess_definitions.Rook(self.curr_color))
+            # return False
+        current_board = copy.copy(self.gameBoard)
+        king_current_loc = copy.copy(self.kings_location[self.curr_color])
+        side_dict = {"right": 1, "left": -1}
+        # check whether king pass under check.
+        self.kings_location[self.curr_color] = Location((7-7*self.curr_color,4+side_dict[rook_side]))
+        self.gameBoard.set_square_state(move, self.gameBoard.get_square_state(move[0]))
+        self.is_in_check(self.kings_location[self.curr_color])
+        self.gameBoard = current_board
+        self.kings_location[self.curr_color] = king_current_loc
+        if self.check:  # todo rearrange the logic so revealing king will return same as self.check
+            return False
+        else:
+            return True
+
+        #self.gameBoard.set_square_state(move, chess_definitions.Rook(self.curr_color)) # todo supposed to be outside.
 
     def promotion(self, move: Locations_List):
         new_piece = None
@@ -229,7 +265,7 @@ class Game:
             if type(piece) is chess_definitions.Pawn or type(piece) is chess_definitions.King or type(
                     piece) is chess_definitions.Knight:
                 self.legal_distance(move, piece)
-            self.path_interruptions_validation(move,piece)
+            self.path_interruptions_validation(move, piece)
             self.is_revealing_king(move)
 
             return True
@@ -239,7 +275,6 @@ class Game:
             print(e)
         except TypeError as e:
             print(e)
-
 
     def turn(self):
         print(self.gameBoard)
@@ -258,6 +293,7 @@ class Game:
                 self.has_moved_castling[f"{rook_side}_{color_dict[self.curr_color]}_rook"] = True
             game.last_move = locations
             game.last_move_type = piece
+
     def play(self):
         game_on = True
         while game_on:
@@ -266,9 +302,8 @@ class Game:
                 game_on = False
         return self.curr_color  # need to switch the integer back to str by dictionary created at enter_move
 
+
 if __name__ == "__main__":
     game = Game()
     winning_color = game.play()
     print(f"{winning_color} WON!")
-
-
