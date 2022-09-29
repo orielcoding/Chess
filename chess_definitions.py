@@ -13,19 +13,7 @@ def create_board():
     return board
 
 
-class WrongColorError(TypeError):
-    pass
-
-
-class PathError(ValueError):
-    pass
-
-
-class ExposeKingError(ValueError):
-    pass
-
-
-class EnPassantError(TypeError):
+class NotInBoardError(ValueError):
     pass
 
 
@@ -37,8 +25,11 @@ class Piece:
         # TODO CHECK THAT ENTERING INIT METHOD WHEN PROMOTING DOESNT OVERRIDES ANYTHING
         self.color = color
 
+    def __str__(self):
+        return f"{self.color_dict[self.color]}_{type(self).__name__[0:2]}"  # todo change if needed
+
     def __repr__(self):
-        return f"{Piece.color_dict[self.color]}_{type(self).__name__[0:2]}"  # todo change if needed
+        return f"{self.color_dict[self.color]}_{type(self).__name__[0:2]}"
 
     def sign_vector(self):
         pass
@@ -87,7 +78,7 @@ class Board:
     def set_initial_squares(self, location: Location, piece: Piece):
         self.board_matrix[location] = piece
 
-    def set_square_state(self, locations: Locations_List, piece: Piece = None):  # None default takes care of el-passan
+    def set_square_state(self, locations: Locations_List, piece: Piece = None):  # None default takes care of en-passant
         self.board_matrix[locations[0]] = None  # the current square
         if piece:
             self.board_matrix[locations[1]] = piece
@@ -103,17 +94,19 @@ class Coordinates:
         self.vector: np.array = np.array(locations[1]) - np.array(locations[0])
         self.sign_vector: np.array = np.sign(self.vector)
 
-    def squares_path(self) -> np.ndarray:
-        available_distance = np.array(
+    def squares_path(self) -> np.ndarray:  # when beginning and end point known, wish to know the path connecting them.
+        available_distance: np.ndarray = np.array(
             [np.multiply(self.sign_vector, np.array([i, i])) for i in range(1, max(abs(self.vector)) + 1)])
         squares = np.array(self.curr_location) + available_distance
         return squares
 
-    def farthest_distance(self) -> np.ndarray:
-        location = np.array(self.curr_location)
-        while bottom_border >= location[0] >= top_border and left_border <= location[1] <= right_border:
-            if 8 > int(location[0] + self.sign_vector[0]) > -1 and 8 > int(location[1] + self.sign_vector[1]) > -1:
-                location += self.sign_vector
-            else:
-                break
-        return location
+    # def farthest_distance(self) -> np.ndarray:  # when beginning point and the direction are known,
+    #     # and I want to find the max distance on the board.
+    #     location = np.array(self.curr_location)
+    #     while bottom_border >= location[0] >= top_border and left_border <= location[1] <= right_border:
+    #         if 8 > int(location[0] + self.sign_vector[0]) > -1 and 8 > int(location[1] + self.sign_vector[1]) > -1:
+    #             location += self.sign_vector
+    #         else:
+    #             break
+    #     return location
+
