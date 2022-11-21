@@ -31,6 +31,9 @@ class Piece:
     def __repr__(self):
         return f"{self.color_dict[self.color]}_{type(self).__name__[0:2]}"
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.color == other.color
+
     def sign_vector(self):
         pass
 
@@ -40,6 +43,11 @@ class Pawn(Piece):
         color_sign = {0: -1, 1: 1}
         return color_sign[self.color] * np.array((1, 0))
 
+    # def uniqe_color_condition(self,current_color, target_color) -> bool:
+    #     if target_color is not None and target_color != current_color:
+    #         return False
+    #     return True
+    #
 
 class Rook(Piece):
     def sign_vector(self):
@@ -94,19 +102,14 @@ class Coordinates:
         self.vector: np.array = np.array(locations[1]) - np.array(locations[0])
         self.sign_vector: np.array = np.sign(self.vector)
 
-    def squares_path(self) -> np.ndarray:  # when beginning and end point known, wish to know the path connecting them.
+    def squares_path_for_validation(self) -> np.ndarray:
         available_distance: np.ndarray = np.array(
-            [np.multiply(self.sign_vector, np.array([i, i])) for i in range(1, max(abs(self.vector)) + 1)])
+            [np.multiply(self.sign_vector, np.array([i, i])) for i in range(1, max(abs(self.vector)+1))])
         squares = np.array(self.curr_location) + available_distance
         return squares
 
-    # def farthest_distance(self) -> np.ndarray:  # when beginning point and the direction are known,
-    #     # and I want to find the max distance on the board.
-    #     location = np.array(self.curr_location)
-    #     while bottom_border >= location[0] >= top_border and left_border <= location[1] <= right_border:
-    #         if 8 > int(location[0] + self.sign_vector[0]) > -1 and 8 > int(location[1] + self.sign_vector[1]) > -1:
-    #             location += self.sign_vector
-    #         else:
-    #             break
-    #     return location
-
+    def squares_path_for_protection(self) -> np.ndarray:
+        available_distance: np.ndarray = np.array(
+            [np.multiply(self.sign_vector, np.array([i, i])) for i in range(0, max(abs(self.vector)))])
+        squares = np.array(self.curr_location) + available_distance
+        return squares
