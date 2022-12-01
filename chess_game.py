@@ -140,10 +140,10 @@ class Game:
                             return False
         elif type(piece) == chess_definitions.King:
             if np.array_equal(chess_definitions.Coordinates(move).vector, np.array([0, 2])):
-                if not self.castling(move, "right"):
+                if not self.castling(move):
                     return False
             elif np.array_equal(chess_definitions.Coordinates(move).vector, np.array([0, -2])):
-                if not self.castling(move, "left"):
+                if not self.castling(move):
                     return False
             else:
                 if self.check_testing:
@@ -311,17 +311,17 @@ class Game:
     def castling(self, move: Locations_List) -> bool:  # todo add case of long side rook path error(kn)
         if self.curr_color == 0:
             condition_a = self.white_cant_castle
-            if move[1][1] == 1:
+            if move[1][1] == 2:
                 condition_b = self.castling_possibilities_info["left_white_rook"]
             else:
                 condition_b = self.castling_possibilities_info["right_white_rook"]
         else:
             condition_a = self.black_cant_castle
-            if move[1][1] == 1:
+            if move[1][1] == 2:
                 condition_b = self.castling_possibilities_info["left_black_rook"]
             else:
                 condition_b = self.castling_possibilities_info["right_black_rook"]
-        if condition_a or condition_b:
+        if condition_a or condition_b:  # then can't castle.
             if self.check_testing:
                 return False
             else:
@@ -330,17 +330,19 @@ class Game:
         current_board = copy.deepcopy(self.gameBoard)
         king_current_loc = copy.deepcopy(self.kings_location[self.curr_color])
         # check whether king pass under check.
-        if move[1][1] == 1:
+        if move[1][1] == 2:
+            if self.gameBoard.get_square_state(Location((7 - 7*self.curr_color, 1))) is not None:
+                return False  # because a piece is blocking the rook from the king where only the rook passes.
             self.kings_location[self.curr_color] = Location((7 - 7 * self.curr_color, 2))
         else:
-            self.kings_location[self.curr_color] = Location((7 - 7 * self.curr_color, 4))
+            self.kings_location[self.curr_color] = Location((7 - 7 * self.curr_color, 6))
         self.gameBoard.set_square_state(move, self.gameBoard.get_square_state(move[0]))
         self.is_in_check()
         self.gameBoard = current_board
         self.kings_location[self.curr_color] = king_current_loc
         if self.check:
             return False
-        else:
+        else:  # update member for future attempts to castle
             return True
 
     def promotion(self, move: Locations_List) -> None:
@@ -387,7 +389,7 @@ class Game:
 
     def turn(self) -> None:
         print(self.gameBoard)
-        string_move = self.enter_move()  # might need to add an exception?
+        string_move = self.enter_move()
         if self.is_valid_move(string_move):
             locations: Locations_List = move_is_in_board(string_move)
             piece: chess_definitions.Piece = self.gameBoard.get_square_state(locations[0])
@@ -403,8 +405,15 @@ class Game:
                     self.white_cant_castle = True
                 else:
                     self.black_cant_castle = True
-            if self.gameBoard.get_square_state(locations[0]) == chess_definitions.Rook:
-                self.castling_possibilities_info[f"{rook_side}_{color_dict[self.curr_color]}_rook"] = True
+            if locations[1][1] == 2 and self.curr_color == 0:
+                self.castling_possibilities_info["left_white_rook"] = True
+            elif locations[1][1] == 2 and self.curr_color == 1:
+                self.castling_possibilities_info["left_black_rook"] = True
+            elif locations[1][1] == 6 and self.curr_color == 0:
+                self.castling_possibilities_info["right_white_rook"] = True
+            else:
+                self.castling_possibilities_info["right_black_rook"] = True
+
 
             # History updates for en passant:
             game.last_move = locations

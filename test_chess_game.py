@@ -9,7 +9,7 @@ def test_get_square_state():
     game = chess_game.Game()
     assert type(game.gameBoard.get_square_state((0, 0))) == chess_definitions.Rook
     assert type(game.gameBoard.get_square_state((7, 0))) == chess_definitions.Rook
-    assert type(game.gameBoard.get_square_state((7, 3))) == chess_definitions.Queen
+    assert type(game.gameBoard.get_square_state((7, 4))) == chess_definitions.Queen
     assert type(game.gameBoard.get_square_state((7, 1))) == chess_definitions.Knight
     assert type(game.gameBoard.get_square_state((0, 5))) == chess_definitions.Bishop
     assert type(game.gameBoard.get_square_state((1, 2))) == chess_definitions.Pawn
@@ -181,32 +181,33 @@ def test_distance_validation(): # todo complete after castlinh
     print("king tests:")
 
 
-# def test_promotion(): # need to handle input
-#     game = chess_game.Game()
-#     assert game.promotion(chess_game.Locations_List([(1,0),(2,0)])) is None
-#     with pytest.raises(TypeError) as e_info:
-#         game.promotion(chess_game.Locations_List([(1,0),(0,0)]))
+def test_promotion():
+    game = chess_game.Game()
+    game.promotion(chess_game.Locations_List([(1, 0), (0, 0)]))
+    assert type(game.gameBoard.get_square_state(chess_definitions.Location((0,0)))) is chess_definitions.Queen
 
+
+#def test_castling():
 
 def test_is_in_check():
-    # game1 = chess_game.Game()
-    # print("")
-    # print("try 1: ")
-    # game1.gameBoard.set_square_state(chess_game.Locations_List([(6,3), (4,3)]), chess_definitions.Pawn(0))
-    # game1.gameBoard.set_square_state(chess_game.Locations_List([(0, 5), (4, 1)]), chess_definitions.Bishop(1))
-    # game1.black_pieces_loc.remove(chess_game.Location((0,5)))
-    # game1.black_pieces_loc.add(chess_game.Location((4,1)))
-    # try_1 = game1.is_in_check()
-    # assert try_1 is True
-    #
-    # game2 = chess_game.Game()
-    # print("")
-    # print("try 2: ")
-    # game2.gameBoard.set_square_state(chess_game.Locations_List([(1, 0), (5, 5)]), chess_definitions.Knight(1))
-    # game2.black_pieces_loc.remove(chess_game.Location((1, 0)))
-    # game2.black_pieces_loc.add(chess_game.Location((5, 5)))
-    # try_2 = game2.is_in_check()
-    # assert try_2 is True
+    game1 = chess_game.Game()
+    print("")
+    print("try 1: ")
+    game1.gameBoard.set_square_state(chess_game.Locations_List([(6,3), (4,3)]), chess_definitions.Pawn(0))
+    game1.gameBoard.set_square_state(chess_game.Locations_List([(0, 5), (4, 1)]), chess_definitions.Bishop(1))
+    game1.black_pieces_loc.remove(chess_game.Location((0,5)))
+    game1.black_pieces_loc.add(chess_game.Location((4,1)))
+    try_1_piece, try_1_locations = game1.is_in_check()
+    assert try_1_piece == chess_definitions.Bishop(1) and try_1_locations == [(4, 1), (7, 4)]
+
+    game2 = chess_game.Game()
+    print("")
+    print("try 2: ")
+    game2.gameBoard.set_square_state(chess_game.Locations_List([(1, 0), (5, 5)]), chess_definitions.Knight(1))
+    game2.black_pieces_loc.remove(chess_game.Location((1, 0)))
+    game2.black_pieces_loc.add(chess_game.Location((5, 5)))
+    try_2_piece, try_2_locations = game2.is_in_check()
+    assert try_2_piece == chess_definitions.Knight(1) and try_2_locations == [(5, 5), (7, 4)]
 
     game3 = chess_game.Game()
     print("")
@@ -217,8 +218,8 @@ def test_is_in_check():
     game3.gameBoard.set_square_state(chess_game.Locations_List([(6, 5), (5, 5)]), chess_definitions.Pawn(0))
     game3.white_pieces_loc.remove(chess_game.Location((6, 5)))
     game3.white_pieces_loc.add(chess_game.Location((5, 5)))
-    try_3 = game3.is_in_check()
-    assert try_3 is True
+    try_3_piece, try_3_locations = game3.is_in_check()
+    assert try_3_piece == chess_definitions.Pawn(0) and try_3_locations == [(5, 5), (4, 4)]
 
 
 def test_is_not_revealing_king():
@@ -256,26 +257,26 @@ def test_is_in_checkmate():
     game1.gameBoard.set_square_state(chess_game.Locations_List([(0, 5), (4, 1)]), chess_definitions.Bishop(1))
     game1.black_pieces_loc.remove(chess_game.Location((0,5)))
     game1.black_pieces_loc.add(chess_game.Location((4,1)))
-    try_1 = game1.is_in_checkmate()
+    try_1 = game1.is_in_checkmate(chess_definitions.Bishop(1),chess_definitions.Locations_List([(4,1),(7,4)]))
     assert try_1 is False
 
-    # game2 = chess_game.Game()
-    # print("")
-    # print("try 2: ")
-    # game2.gameBoard.set_square_state(chess_game.Locations_List([(1, 0), (5, 5)]), chess_definitions.Knight(1))
-    # game2.black_pieces_loc.remove(chess_game.Location((1, 0)))
-    # game2.black_pieces_loc.add(chess_game.Location((5, 5)))
-    # try_2 = game2.is_in_checkmate()
-    # assert try_2 is False
-    #
-    # game3 = chess_game.Game()
-    # print("")
-    # print("try 3: ")
-    # game3.curr_color = 1
-    # game3.gameBoard.set_square_state(chess_game.Locations_List([(0, 4), (4, 4)]), chess_definitions.King(1))
-    # game3.kings_location[game3.curr_color] = chess_game.Location((4,4))
-    # game3.gameBoard.set_square_state(chess_game.Locations_List([(6, 5), (5, 5)]), chess_definitions.Pawn(0))
-    # game3.white_pieces_loc.remove(chess_game.Location((6, 5)))
-    # game3.white_pieces_loc.add(chess_game.Location((5, 5)))
-    # try_3 = game3.is_in_checkmate()
-    # assert try_3 is False
+    game2 = chess_game.Game()
+    print("")
+    print("try 2: ")
+    game2.gameBoard.set_square_state(chess_game.Locations_List([(1, 0), (5, 5)]), chess_definitions.Knight(1))
+    game2.black_pieces_loc.remove(chess_game.Location((1, 0)))
+    game2.black_pieces_loc.add(chess_game.Location((5, 5)))
+    try_2 = game2.is_in_checkmate(chess_definitions.Knight(1),chess_definitions.Locations_List([(5,5),(7,4)]))
+    assert try_2 is False
+
+    game3 = chess_game.Game()
+    print("")
+    print("try 3: ")
+    game3.curr_color = 1
+    game3.gameBoard.set_square_state(chess_game.Locations_List([(0, 4), (4, 4)]), chess_definitions.King(1))
+    game3.kings_location[game3.curr_color] = chess_game.Location((4,4))
+    game3.gameBoard.set_square_state(chess_game.Locations_List([(6, 5), (5, 5)]), chess_definitions.Pawn(0))
+    game3.white_pieces_loc.remove(chess_game.Location((6, 5)))
+    game3.white_pieces_loc.add(chess_game.Location((5, 5)))
+    try_3 = game3.is_in_checkmate(chess_definitions.Pawn(0),chess_definitions.Locations_List([(5,5),(4,4)]))
+    assert try_3 is False
